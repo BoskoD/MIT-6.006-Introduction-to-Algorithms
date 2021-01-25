@@ -14,6 +14,8 @@ That way we will often find multiple values, as long as they are peaks. In [4,9,
 
 
 
+
+
 2) Models of Computation, Document Distance
 https://www.youtube.com/watch?v=Zc54gFhdpLA&list=PLUl4u3cNGP61Oq3tWYp6V_F-5jb5L2iHb&index=2
 
