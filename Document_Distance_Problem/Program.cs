@@ -1,14 +1,4 @@
-﻿// REF: http://courses.csail.mit.edu/6.006/spring11/lectures/lec01.pdf
-
-// Algorithm:
-//  1.Read each document
-//  2.Split each document into words. A valid word is at least 3 characters long.
-//  3.Count word frequencies (document vectors) for each document
-//  4.Compute dot product for doc 1 and 2
-//  5.Compute document matrix . 0=identical, 1.57= completely different
-
-
-using System;
+﻿using System;
 using System.Diagnostics;
 using System.IO;
 using System.Net;
