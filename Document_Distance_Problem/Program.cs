@@ -5,15 +5,13 @@
 //  2.Split each document into words. A valid word is at least 3 characters long.
 //  3.Count word frequencies (document vectors) for each document
 //  4.Compute dot product for doc 1 and 2
-//  5.Compute document distance . 0=identical, 1.57= completely different
+//  5.Compute document matrix . 0=identical, 1.57= completely different
 
 
 using System;
-using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
 using System.Text.RegularExpressions;
 
 namespace Document_Distance_Problem
@@ -22,92 +20,77 @@ namespace Document_Distance_Problem
     {
         static void Main(string[] args)
         {
-            string file1 = ReadData("http://courses.csail.mit.edu/6.006/fall07/data/t1.verne.txt");
-            string file2 = ReadData("http://courses.csail.mit.edu/6.006/fall07/data/t2.bobsey.txt");
+            string first = ReadData("http://courses.csail.mit.edu/6.006/fall07/data/t1.verne.txt");
+            string second = ReadData("http://courses.csail.mit.edu/6.006/fall07/data/t1.verne.txt");
 
-            var firstFrequencies = ComputeFrequency(file1);
-            var secondFrequencies = ComputeFrequency(file2);
+            string firstStringCleaned = RemoveWhitespace(first);
+            string secondStringCleaned = RemoveWhitespace(second);
 
-            var distance = ComputeDistance(firstFrequencies, secondFrequencies);
+            Stopwatch sw = new Stopwatch();
+            sw.Start();
+            int levDist = LevenshteinMatrix(firstStringCleaned, secondStringCleaned);
+            sw.Stop();
 
-            Console.WriteLine($"The distance is: {distance}");
-            
+            Console.WriteLine($"Document distance: {levDist}.");
+            Console.WriteLine($"Time elapsed: {sw.Elapsed.TotalSeconds} seconds.");
         }
-
-        private static Dictionary<string, int> ComputeFrequency(string data)
+        static int LevenshteinMatrix(string first, string second)
         {
-            Dictionary<string, int> dictionaryWordCound = new Dictionary<string, int>();
+            int firstStringLength = first.Length;
+            int secondStringLength = second.Length;
 
-            // convert all non-alphabet and non-number characters into spaces.
-            Regex regex = new Regex(@"[/W_]+");
-            string result = regex.Replace(data, " ");
+            int[,] matrix = new int[firstStringLength + 1, secondStringLength + 1];
 
-            // parse words from text
-            var words = Regex.Matches(result, @"\w{3,}", RegexOptions.IgnoreCase)
-                .OfType<Match>()
-                .Select(m => m.Groups[0].Value)
-                .ToArray();
-
-            // get word count for each word in array
-            dictionaryWordCound = new Dictionary<string, int>();
-
-            foreach (var word in words)
+            // check if strings are empty
+            if (firstStringLength == 0)
             {
-                if (dictionaryWordCound.ContainsKey(word))
-                {
-                    dictionaryWordCound[word] += 1;
-                }
-                else
-                {
-                    dictionaryWordCound.Add(word, 1);
-                }
+                return secondStringLength;
             }
-            return dictionaryWordCound;
-        }
-
-        public static double ComputeDistance(Dictionary<string, int> first, Dictionary<string, int> second)
-        {
-            var numerator = GetInnerProduct(first, second);
-            var denominator = Math.Sqrt(GetInnerProduct(first, first) * GetInnerProduct(second, second));
-            return Math.Acos(numerator / denominator);
-        }
-
-        private static int GetInnerProduct(Dictionary<string, int> dict1, Dictionary<string, int> dict2)
-        {
-            int total, count1, count2,  finalTotal = 0;
-
-            foreach (KeyValuePair<string, int> pair in dict1)
+            if (secondStringLength == 0)
             {
-                string word = pair.Key;
-                count1 = pair.Value;
-
-                if (dict2.ContainsKey(word))
-                {
-                    count2 = dict2[word];
-                    total = count1 * count2;
-                    finalTotal += total;
-                }
+                return firstStringLength;
             }
-            return finalTotal;
-        }
 
+            // initialize the matrix
+            for (int i = 0; i <= firstStringLength; i++)
+                matrix[i, 0] = i;
+            for (int j = 0; j <= secondStringLength; j++)
+                matrix[0, j] = j;
+
+            for (int j = 1; j <= secondStringLength; j++)
+                for (int i = 1; i <= firstStringLength; i++)
+                    if (first[i - 1] == second[j - 1])
+                        matrix[i, j] = matrix[i - 1, j - 1];  //no operation
+                    else
+                        matrix[i, j] = Math.Min(Math.Min(
+                            matrix[i - 1, j] + 1,    //a deletion
+                            matrix[i, j - 1] + 1),   //an insertion
+                            matrix[i - 1, j - 1] + 1 //a substitution
+                            );
+            return matrix[firstStringLength, secondStringLength];
+        }
         public static string ReadData(string url)
         {
-                // Create a request for the URL.
-                WebRequest request = WebRequest.Create(url);
+            // Create a request for the URL.
+            WebRequest request = WebRequest.Create(url);
 
-                // Get the response.
-                using WebResponse response = request.GetResponse();
-                // Get the stream containing content returned by the server.
-                // The using block ensures the stream is automatically closed.
-                using Stream dataStream = response.GetResponseStream();
-                // Open the stream using a StreamReader for easy access.
-                StreamReader reader = new StreamReader(dataStream);
-                // Read the content.
-                string responseFromServer = reader.ReadToEnd();
-                // Display the content.
-                return responseFromServer;
-            
+            // Get the response.
+            using WebResponse response = request.GetResponse();
+            // Get the stream containing content returned by the server.
+            // The using block ensures the stream is automatically closed.
+            using Stream dataStream = response.GetResponseStream();
+            // Open the stream using a StreamReader for easy access.
+            StreamReader reader = new StreamReader(dataStream);
+            // Read the content.
+            string responseFromServer = reader.ReadToEnd();
+            // Display the content.
+            return responseFromServer;
+
+        }
+        static string RemoveWhitespace(string t) 
+        {
+            string cleanup = Regex.Replace(t, @"\s+", "");
+            return cleanup;
         }
     }
 }
